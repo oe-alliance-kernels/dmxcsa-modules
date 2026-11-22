@@ -38,7 +38,7 @@
 
     <rect x="372" y="248" width="176" height="70" rx="12" fill="#0d2136" stroke="#58a6ff" stroke-width="2.5"/>
     <text x="460" y="282" text-anchor="middle" fill="#58a6ff" font-size="19" font-weight="600">dmxcsa</text>
-    <text x="460" y="302" text-anchor="middle" fill="#9fb6c7" font-size="12">CSA · CSA-ALT · buffer</text>
+    <text x="460" y="302" text-anchor="middle" fill="#9fb6c7" font-size="12">CSA-ALT · buffer</text>
 
     <rect x="594" y="252" width="120" height="62" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
     <text x="654" y="288" text-anchor="middle">DVR B</text>
