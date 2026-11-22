@@ -59,7 +59,7 @@ jobs:
             # control + maintainer scripts
             C="c-$BOX"; rm -rf "$C"; mkdir -p "$C"
             sed -e "s/@VER@/$VER/" -e "s/@BOX@/$BOX/" -e "s/@ARCH@/$BOX/" packaging/control.in > "$C/control"
-            cp "packaging/postinst-$AUTOLOAD" "$C/postinst"; chmod 755 "$C/postinst"
+            cp packaging/postinst "$C/postinst"; chmod 755 "$C/postinst"
             cp packaging/prerm "$C/prerm"; chmod 755 "$C/prerm"
 
             # ---- ipk (opkg); Architecture = box name, matches that box's opkg arch list ----

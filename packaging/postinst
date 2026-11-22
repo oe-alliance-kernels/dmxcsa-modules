@@ -1,0 +1,20 @@
+#!/bin/sh
+# dmxcsa autoload for every box. An init script (S66) waits for the DVB demux
+# node to appear, then loads the module. This is robust whether the DVB driver
+# comes up early (modules-load boxes, DVB at S04) or through a platform init
+# (Vu+ proxy at S65), and it sidesteps BusyBox modprobe (no softdep). S66 runs
+# before enigma2.
+set -e
+depmod -a 2>/dev/null || true
+cat > /etc/init.d/dmxcsa <<'EOS'
+#!/bin/sh
+[ "$1" = start ] || exit 0
+i=0
+while [ ! -e /dev/dvb/adapter0/demux0 ] && [ $i -lt 30 ]; do sleep 1; i=$((i+1)); done
+modprobe dmxcsa
+exit 0
+EOS
+chmod 755 /etc/init.d/dmxcsa
+update-rc.d dmxcsa start 66 S . 2>/dev/null || true
+modprobe dmxcsa 2>/dev/null || true
+exit 0
