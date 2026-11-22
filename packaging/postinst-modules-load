@@ -1,0 +1,11 @@
+#!/bin/sh
+# dmxcsa autoload on boxes that load the DVB driver via /etc/modules-load.d.
+# Named zz-dmxcsa.conf so it sorts AFTER the DVB driver's own conf file and the
+# driver is up first; this works with both kmod and BusyBox modprobe (the latter
+# has no softdep support).
+set -e
+depmod -a 2>/dev/null || true
+mkdir -p /etc/modules-load.d
+echo dmxcsa > /etc/modules-load.d/zz-dmxcsa.conf
+modprobe dmxcsa 2>/dev/null || true
+exit 0

@@ -1,0 +1,9 @@
+Package: kernel-module-dmxcsa
+Version: @VER@
+Description: Descramble CSA-ALT in the kernel (dmxcsa module for @BOX@).
+Architecture: @ARCH@
+Section: kernel
+Priority: optional
+Maintainer: OE-Alliance Team
+License: GPL-2.0-or-later
+Source: https://github.com/oe-alliance-kernels/dmxcsa-modules

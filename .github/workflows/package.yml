@@ -1,0 +1,86 @@
+name: package
+
+# When a release with the kernel modules is published here, wrap each module
+# into an opkg (.ipk) and, for the Dream boxes, a Debian (.deb) installer and
+# attach them to the same release.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "release tag to package"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install packaging tools
+        run: sudo apt-get update && sudo apt-get install -y fakeroot binutils dpkg xz-utils jq
+
+      - name: Download the kernel modules from the release
+        run: |
+          mkdir -p ko
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'dmxcsa-*.ko' --dir ko
+          ls -la ko
+
+      - name: Build installers per box
+        run: |
+          set -e
+          VER="${TAG#v}"
+          mkdir -p out
+          debarch() { case "$1" in arm64) echo arm64;; arm) echo armhf;; mips) echo mipsel;; *) echo "$1";; esac; }
+
+          while read -r b; do
+            BOX=$(jq -r .box <<<"$b")
+            KARCH=$(jq -r .karch <<<"$b")
+            AUTOLOAD=$(jq -r .autoload <<<"$b")
+            DEB=$(jq -r .deb <<<"$b")
+            KO="ko/dmxcsa-${BOX}.ko"
+            if [ ! -f "$KO" ]; then echo "no module for $BOX in this release, skip"; continue; fi
+            KVER=$(strings "$KO" | sed -n 's/^vermagic=\([^ ]*\).*/\1/p' | head -1)
+            [ -n "$KVER" ] || { echo "no vermagic in $KO"; exit 1; }
+            echo "== $BOX  kver=$KVER  autoload=$AUTOLOAD  deb=$DEB =="
+
+            # data tree: the module at the kernel's extra path
+            D="d-$BOX"; rm -rf "$D"; mkdir -p "$D/lib/modules/$KVER/extra"
+            cp "$KO" "$D/lib/modules/$KVER/extra/dmxcsa.ko"
+
+            # control + maintainer scripts
+            C="c-$BOX"; rm -rf "$C"; mkdir -p "$C"
+            sed -e "s/@VER@/$VER/" -e "s/@BOX@/$BOX/" -e "s/@ARCH@/$BOX/" packaging/control.in > "$C/control"
+            cp "packaging/postinst-$AUTOLOAD" "$C/postinst"; chmod 755 "$C/postinst"
+            cp packaging/prerm "$C/prerm"; chmod 755 "$C/prerm"
+
+            # ---- ipk (opkg); Architecture = box name, matches that box's opkg arch list ----
+            W="w-$BOX"; rm -rf "$W"; mkdir -p "$W"
+            tar --numeric-owner --owner=0 --group=0 -czf "$W/control.tar.gz" -C "$C" .
+            tar --numeric-owner --owner=0 --group=0 -czf "$W/data.tar.gz" -C "$D" .
+            echo "2.0" > "$W/debian-binary"
+            ( cd "$W" && ar rc "$GITHUB_WORKSPACE/out/kernel-module-dmxcsa_${VER}_${BOX}.ipk" debian-binary control.tar.gz data.tar.gz )
+
+            # ---- deb (dpkg) for the Dream boxes; Architecture from the kernel arch ----
+            if [ "$DEB" = "true" ]; then
+              DA=$(debarch "$KARCH")
+              DB="deb-$BOX"; rm -rf "$DB"; mkdir -p "$DB/DEBIAN"
+              cp -a "$D/." "$DB/"
+              sed -e "s/@VER@/$VER/" -e "s/@BOX@/$BOX/" -e "s/@ARCH@/$DA/" packaging/control.in > "$DB/DEBIAN/control"
+              cp "$C/postinst" "$DB/DEBIAN/postinst"
+              cp "$C/prerm" "$DB/DEBIAN/prerm"
+              fakeroot dpkg-deb -Z xz --build "$DB" "out/kernel-module-dmxcsa_${VER}_${BOX}_${DA}.deb"
+            fi
+          done < <(jq -c '.[]' boxes.json)
+
+          echo "=== built installers ==="; ls -la out
+
+      - name: Attach installers to the release
+        run: gh release upload "$TAG" out/* --repo "$GITHUB_REPOSITORY" --clobber
