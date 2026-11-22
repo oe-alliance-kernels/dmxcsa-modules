@@ -18,7 +18,7 @@
   <!-- userspace boxes -->
   <g>
     <rect x="360" y="86" width="210" height="56" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
-    <text x="465" y="120" text-anchor="middle" fill="#e6edf3" font-size="17">userspace player</text>
+    <text x="465" y="120" text-anchor="middle" fill="#e6edf3" font-size="17">enigma2</text>
     <rect x="690" y="86" width="170" height="56" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
     <text x="775" y="120" text-anchor="middle" fill="#e6edf3" font-size="17">CA client</text>
   </g>
