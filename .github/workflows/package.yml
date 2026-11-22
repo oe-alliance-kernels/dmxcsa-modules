@@ -27,11 +27,12 @@ jobs:
       - name: Install packaging tools
         run: sudo apt-get update && sudo apt-get install -y fakeroot binutils dpkg xz-utils jq
 
-      - name: Download the kernel modules from the release
+      - name: Download modules and packaging metadata from the release
         run: |
           mkdir -p ko
           gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'dmxcsa-*.ko' --dir ko
-          ls -la ko
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'packages.json'
+          ls -la ko packages.json
 
       - name: Build installers per box
         run: |
@@ -41,8 +42,8 @@ jobs:
           debarch() { case "$1" in arm64) echo arm64;; arm) echo armhf;; mips) echo mipsel;; *) echo "$1";; esac; }
 
           while read -r b; do
-            BOX=$(jq -r .box <<<"$b")
-            KARCH=$(jq -r .karch <<<"$b")
+            BOX=$(jq -r .machine <<<"$b")
+            KARCH=$(jq -r .arch <<<"$b")
             AUTOLOAD=$(jq -r .autoload <<<"$b")
             DEB=$(jq -r .deb <<<"$b")
             KO="ko/dmxcsa-${BOX}.ko"
@@ -78,7 +79,7 @@ jobs:
               cp "$C/prerm" "$DB/DEBIAN/prerm"
               fakeroot dpkg-deb -Z xz --build "$DB" "out/kernel-module-dmxcsa_${VER}_${BOX}_${DA}.deb"
             fi
-          done < <(jq -c '.[]' boxes.json)
+          done < <(jq -c '.[]' packages.json)
 
           echo "=== built installers ==="; ls -la out
 

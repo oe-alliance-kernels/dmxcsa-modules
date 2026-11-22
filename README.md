@@ -4,10 +4,9 @@
 not have to. One scrambled service is handled in software by the module; free
 and plain-CSA services stay on the hardware path, untouched.
 
-This repository distributes the **prebuilt kernel modules** and the ready-to-use
+This repository contains the **kernel modules** and the ready-to-use
 **opkg (`.ipk`) and Debian (`.deb`) installers**, one per receiver, published as
-GitHub **Releases**. The module's source is maintained separately — here you
-find only the binaries and installers.
+GitHub **Releases**.
 
 ## How it works
 
