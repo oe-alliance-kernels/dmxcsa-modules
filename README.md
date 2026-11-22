@@ -10,14 +10,7 @@ GitHub **Releases**.
 
 ## How it works
 
-```mermaid
-flowchart LR
-    T([tuner]) --> E["service demux<br/>(untouched)"]
-    E --> HW["sections, ecm, recordings,<br/>hardware descrambler"]
-    E -. "tap, as a recording would" .-> C["dmxcsa<br/>CSA-ALT in software"]
-    CA["CA client<br/>keys · pids · algorithm"] --> C
-    C --> S["shadow demux"] --> D["decoder<br/>clock · picture · sound"]
-```
+![How dmxcsa works](docs/how-it-works.svg)
 
 The module taps the service's demux node the way a recording would, descrambles
 the stream in software, and plays the result to the decoder through a second

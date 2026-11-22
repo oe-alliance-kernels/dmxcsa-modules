@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 430" width="1060" height="430" font-family="-apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="dmxcsa sits in the kernel between the service demux and a shadow demux; the CA client writes control words into it; the payload never leaves the kernel.">
+  <defs>
+    <marker id="o" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e3742f"/>
+    </marker>
+    <marker id="b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#58a6ff"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1060" height="430" fill="#0d1117"/>
+
+  <!-- lane labels + divider -->
+  <text x="28" y="60" fill="#6e7681" font-size="15" letter-spacing="2">USERSPACE</text>
+  <text x="28" y="238" fill="#6e7681" font-size="15" letter-spacing="2">KERNEL</text>
+  <line x1="20" y1="168" x2="1040" y2="168" stroke="#30363d" stroke-width="1.5" stroke-dasharray="5 6"/>
+
+  <!-- userspace boxes -->
+  <g>
+    <rect x="360" y="86" width="210" height="56" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
+    <text x="465" y="120" text-anchor="middle" fill="#e6edf3" font-size="17">userspace player</text>
+    <rect x="690" y="86" width="170" height="56" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
+    <text x="775" y="120" text-anchor="middle" fill="#e6edf3" font-size="17">CA client</text>
+  </g>
+
+  <!-- control-words path: CA client -> down -> left -> into dmxcsa top -->
+  <path d="M775 142 L775 206 L450 206 L450 250" fill="none" stroke="#58a6ff" stroke-width="2.5" marker-end="url(#b)"/>
+  <text x="612" y="198" text-anchor="middle" fill="#58a6ff" font-size="14">control words</text>
+
+  <!-- kernel flow -->
+  <g font-size="17" fill="#e6edf3">
+    <rect x="20"  y="252" width="130" height="62" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
+    <text x="85" y="288" text-anchor="middle">Frontend</text>
+
+    <rect x="196" y="252" width="130" height="62" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
+    <text x="261" y="282" text-anchor="middle">Demux A</text>
+    <text x="261" y="301" text-anchor="middle" fill="#8b949e" font-size="12">the service's own</text>
+
+    <rect x="372" y="248" width="176" height="70" rx="12" fill="#0d2136" stroke="#58a6ff" stroke-width="2.5"/>
+    <text x="460" y="282" text-anchor="middle" fill="#58a6ff" font-size="19" font-weight="600">dmxcsa</text>
+    <text x="460" y="302" text-anchor="middle" fill="#9fb6c7" font-size="12">CSA · CSA-ALT · buffer</text>
+
+    <rect x="594" y="252" width="120" height="62" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
+    <text x="654" y="288" text-anchor="middle">DVR B</text>
+
+    <rect x="760" y="252" width="130" height="62" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
+    <text x="825" y="288" text-anchor="middle">Demux B</text>
+
+    <rect x="936" y="252" width="110" height="62" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
+    <text x="991" y="288" text-anchor="middle">Decoder</text>
+  </g>
+
+  <!-- orange flow arrows -->
+  <g stroke="#e3742f" stroke-width="3" fill="none">
+    <line x1="152" y1="283" x2="192" y2="283" marker-end="url(#o)"/>
+    <line x1="328" y1="283" x2="368" y2="283" marker-end="url(#o)"/>
+    <line x1="550" y1="283" x2="590" y2="283" marker-end="url(#o)"/>
+    <line x1="716" y1="283" x2="756" y2="283" marker-end="url(#o)"/>
+    <line x1="892" y1="283" x2="932" y2="283" marker-end="url(#o)"/>
+  </g>
+
+  <text x="1040" y="360" text-anchor="end" fill="#8b949e" font-size="13">payload stays in the kernel — 0 user-space crossings</text>
+</svg>
