@@ -1,6 +1,6 @@
 #!/bin/sh
 # Remove the autoload hooks on uninstall. The module itself is left to the next
 # reboot rather than force-unloaded while it may be descrambling.
-rm -f /etc/modules-load.d/zz-dmxcsa.conf /etc/init.d/dmxcsa
+rm -f /etc/init.d/dmxcsa
 update-rc.d dmxcsa remove 2>/dev/null || true
 exit 0
