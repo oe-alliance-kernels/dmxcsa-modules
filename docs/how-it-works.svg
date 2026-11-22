@@ -1,63 +1,73 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 430" width="1060" height="430" font-family="-apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="dmxcsa sits in the kernel between the service demux and a shadow demux; the CA client writes control words into it; the payload never leaves the kernel.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 540" width="1120" height="540" font-family="-apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="In the kernel the service demux fans out three ways to the decoder: CSA-ALT through dmxcsa in software, plain CSA through the hardware descrambler, and clear FTA straight through. enigma2 and the CA client live in userspace; the CA client writes control words into both dmxcsa and the hardware descrambler, and dmxcsa can report status back to enigma2.">
   <defs>
-    <marker id="o" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M0 0 L10 5 L0 10 z" fill="#e3742f"/>
-    </marker>
-    <marker id="b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M0 0 L10 5 L0 10 z" fill="#58a6ff"/>
-    </marker>
+    <marker id="o" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#e3742f"/></marker>
+    <marker id="g" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#3fb950"/></marker>
+    <marker id="b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#58a6ff"/></marker>
+    <marker id="s" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8b949e"/></marker>
   </defs>
 
-  <rect x="0" y="0" width="1060" height="430" fill="#0d1117"/>
+  <rect x="0" y="0" width="1120" height="540" fill="#0d1117"/>
 
-  <!-- lane labels + divider -->
-  <text x="28" y="60" fill="#6e7681" font-size="15" letter-spacing="2">USERSPACE</text>
-  <text x="28" y="238" fill="#6e7681" font-size="15" letter-spacing="2">KERNEL</text>
-  <line x1="20" y1="168" x2="1040" y2="168" stroke="#30363d" stroke-width="1.5" stroke-dasharray="5 6"/>
+  <text x="28" y="56" fill="#6e7681" font-size="15" letter-spacing="2">USERSPACE</text>
+  <text x="28" y="232" fill="#6e7681" font-size="15" letter-spacing="2">KERNEL</text>
+  <line x1="20" y1="180" x2="1100" y2="180" stroke="#30363d" stroke-width="1.5" stroke-dasharray="5 6"/>
 
-  <!-- userspace boxes -->
-  <g>
-    <rect x="360" y="86" width="210" height="56" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
-    <text x="465" y="120" text-anchor="middle" fill="#e6edf3" font-size="17">enigma2</text>
-    <rect x="690" y="86" width="170" height="56" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
-    <text x="775" y="120" text-anchor="middle" fill="#e6edf3" font-size="17">CA client</text>
+  <!-- userspace -->
+  <rect x="358" y="90" width="204" height="56" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
+  <text x="460" y="124" text-anchor="middle" fill="#e6edf3" font-size="17">enigma2</text>
+  <rect x="700" y="90" width="170" height="56" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
+  <text x="785" y="124" text-anchor="middle" fill="#e6edf3" font-size="17">CA client</text>
+
+  <!-- control words: CA client -> dmxcsa AND -> hardware descrambler -->
+  <path d="M785 146 L785 230 L451 230 L451 263" fill="none" stroke="#58a6ff" stroke-width="2.5" marker-end="url(#b)"/>
+  <path d="M561 230 L561 362" fill="none" stroke="#58a6ff" stroke-width="2.5" marker-end="url(#b)"/>
+  <text x="648" y="222" text-anchor="middle" fill="#58a6ff" font-size="14">control words</text>
+
+  <!-- status readout: dmxcsa -> enigma2 (read-only, optional) -->
+  <path d="M410 265 L410 149" fill="none" stroke="#58a6ff" stroke-width="1.8" stroke-dasharray="5 5" marker-end="url(#b)"/>
+  <text x="402" y="212" text-anchor="end" fill="#58a6ff" font-size="14">status</text>
+  <text x="420" y="212" text-anchor="start" fill="#58a6ff" font-size="14">optional</text>
+
+  <!-- frontend + fan-out / fan-in -->
+  <rect x="24" y="335" width="128" height="54" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
+  <text x="88" y="368" text-anchor="middle" fill="#e6edf3" font-size="17">Frontend</text>
+
+  <rect x="180" y="255" width="140" height="210" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
+  <text x="250" y="354" text-anchor="middle" fill="#e6edf3" font-size="17">Demux A</text>
+  <text x="250" y="373" text-anchor="middle" fill="#8b949e" font-size="12">the service's own</text>
+
+  <rect x="940" y="255" width="130" height="210" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
+  <text x="1005" y="366" text-anchor="middle" fill="#e6edf3" font-size="17">Decoder</text>
+
+  <line x1="152" y1="362" x2="176" y2="362" stroke="#e3742f" stroke-width="3" marker-end="url(#o)"/>
+
+  <!-- path 1: CSA-ALT through dmxcsa (lane y=300) -->
+  <rect x="360" y="267" width="178" height="66" rx="12" fill="#0d2136" stroke="#58a6ff" stroke-width="2.5"/>
+  <text x="449" y="295" text-anchor="middle" fill="#58a6ff" font-size="19" font-weight="600">dmxcsa</text>
+  <text x="449" y="315" text-anchor="middle" fill="#9fb6c7" font-size="11">CSA-ALT software descrambler</text>
+  <rect x="596" y="275" width="96"  height="50" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
+  <text x="644" y="305" text-anchor="middle" fill="#e6edf3" font-size="16">DVR B</text>
+  <rect x="724" y="275" width="120" height="50" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
+  <text x="784" y="305" text-anchor="middle" fill="#e6edf3" font-size="16">Demux B</text>
+  <g fill="none" stroke-width="3">
+    <line x1="322" y1="300" x2="356" y2="300" stroke="#e3742f" marker-end="url(#o)"/>
+    <line x1="538" y1="300" x2="592" y2="300" stroke="#3fb950" marker-end="url(#g)"/>
+    <line x1="692" y1="300" x2="720" y2="300" stroke="#3fb950" marker-end="url(#g)"/>
+    <line x1="844" y1="300" x2="936" y2="300" stroke="#3fb950" marker-end="url(#g)"/>
   </g>
 
-  <!-- control-words path: CA client -> down -> left -> into dmxcsa top -->
-  <path d="M775 142 L775 206 L450 206 L450 250" fill="none" stroke="#58a6ff" stroke-width="2.5" marker-end="url(#b)"/>
-  <text x="612" y="198" text-anchor="middle" fill="#58a6ff" font-size="14">control words</text>
-
-  <!-- kernel flow -->
-  <g font-size="17" fill="#e6edf3">
-    <rect x="20"  y="252" width="130" height="62" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
-    <text x="85" y="288" text-anchor="middle">Frontend</text>
-
-    <rect x="196" y="252" width="130" height="62" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
-    <text x="261" y="282" text-anchor="middle">Demux A</text>
-    <text x="261" y="301" text-anchor="middle" fill="#8b949e" font-size="12">the service's own</text>
-
-    <rect x="372" y="248" width="176" height="70" rx="12" fill="#0d2136" stroke="#58a6ff" stroke-width="2.5"/>
-    <text x="460" y="282" text-anchor="middle" fill="#58a6ff" font-size="19" font-weight="600">dmxcsa</text>
-    <text x="460" y="302" text-anchor="middle" fill="#9fb6c7" font-size="12">CSA-ALT · buffer</text>
-
-    <rect x="594" y="252" width="120" height="62" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
-    <text x="654" y="288" text-anchor="middle">DVR B</text>
-
-    <rect x="760" y="252" width="130" height="62" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
-    <text x="825" y="288" text-anchor="middle">Demux B</text>
-
-    <rect x="936" y="252" width="110" height="62" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
-    <text x="991" y="288" text-anchor="middle">Decoder</text>
+  <!-- path 2: plain CSA through the hardware descrambler (lane y=390) -->
+  <text x="390" y="382" text-anchor="middle" fill="#8b949e" font-size="12">plain CSA</text>
+  <rect x="470" y="366" width="200" height="48" rx="10" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
+  <text x="570" y="395" text-anchor="middle" fill="#c9d1d9" font-size="14">hardware descrambler</text>
+  <g fill="none" stroke="#8b949e" stroke-width="2.5">
+    <line x1="322" y1="390" x2="466" y2="390" marker-end="url(#s)"/>
+    <line x1="670" y1="390" x2="936" y2="390" marker-end="url(#s)"/>
   </g>
 
-  <!-- orange flow arrows -->
-  <g stroke="#e3742f" stroke-width="3" fill="none">
-    <line x1="152" y1="283" x2="192" y2="283" marker-end="url(#o)"/>
-    <line x1="328" y1="283" x2="368" y2="283" marker-end="url(#o)"/>
-    <line x1="550" y1="283" x2="590" y2="283" marker-end="url(#o)"/>
-    <line x1="716" y1="283" x2="756" y2="283" marker-end="url(#o)"/>
-    <line x1="892" y1="283" x2="932" y2="283" marker-end="url(#o)"/>
-  </g>
+  <!-- path 3: FTA, clear straight through (lane y=448) -->
+  <text x="629" y="440" text-anchor="middle" fill="#6e7681" font-size="12">FTA — clear, no descrambling</text>
+  <line x1="322" y1="448" x2="936" y2="448" fill="none" stroke="#6e7681" stroke-width="2.5" stroke-dasharray="7 6" marker-end="url(#s)"/>
 
-  <text x="1040" y="360" text-anchor="end" fill="#8b949e" font-size="13">payload stays in the kernel — 0 user-space crossings</text>
+  <text x="1100" y="502" text-anchor="end" fill="#8b949e" font-size="13">CSA-ALT payload stays in the kernel — 0 user-space crossings</text>
 </svg>
