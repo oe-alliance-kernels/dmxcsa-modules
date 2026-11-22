@@ -6,9 +6,15 @@
 # before enigma2.
 set -e
 depmod -a 2>/dev/null || true
+# remove any early-load configs left over from testing, so this S66 path is the
+# only thing that loads the module (an early modules-load would race the DVB
+# driver, exactly what the wait loop avoids)
+rm -f /etc/modprobe.d/dmxcsa.conf /etc/modules-load.d/dmxcsa.conf
 cat > /etc/init.d/dmxcsa <<'EOS'
 #!/bin/sh
 [ "$1" = start ] || exit 0
+# drop any early-load config that reappeared, before we load the module
+rm -f /etc/modprobe.d/dmxcsa.conf /etc/modules-load.d/dmxcsa.conf
 i=0
 while [ ! -e /dev/dvb/adapter0/demux0 ] && [ $i -lt 30 ]; do sleep 1; i=$((i+1)); done
 modprobe dmxcsa
