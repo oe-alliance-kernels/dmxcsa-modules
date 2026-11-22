@@ -1,0 +1,91 @@
+# kernel-module-dmxcsa
+
+`dmxcsa` descrambles **CSA-ALT** inside the kernel, so the userspace player does
+not have to. One scrambled service is handled in software by the module; free
+and plain-CSA services stay on the hardware path, untouched.
+
+This repository distributes the **prebuilt kernel modules** and the ready-to-use
+**opkg (`.ipk`) and Debian (`.deb`) installers**, one per receiver, published as
+GitHub **Releases**. The module's source is maintained separately — here you
+find only the binaries and installers.
+
+## How it works
+
+```mermaid
+flowchart LR
+    T([tuner]) --> E["service demux<br/>(untouched)"]
+    E --> HW["sections, ecm, recordings,<br/>hardware descrambler"]
+    E -. "tap, as a recording would" .-> C["dmxcsa<br/>CSA-ALT in software"]
+    CA["CA client<br/>keys · pids · algorithm"] --> C
+    C --> S["shadow demux"] --> D["decoder<br/>clock · picture · sound"]
+```
+
+The module taps the service's demux node the way a recording would, descrambles
+the stream in software, and plays the result to the decoder through a second
+"shadow" demux node. Keys, pids and the algorithm come from the CA ioctls a
+local CA client writes.
+
+## Install
+
+Download the package for your receiver from the latest
+[Release](../../releases/latest) and install it.
+
+**opkg receivers** (most enigma2 images):
+
+```sh
+opkg install kernel-module-dmxcsa_<version>_<box>.ipk
+```
+
+**Debian-based receivers** (certain Dreamboxes):
+
+```sh
+dpkg -i kernel-module-dmxcsa_<version>_<box>.deb
+```
+
+The installer copies the module to `/lib/modules/<kernel>/extra/`, runs
+`depmod`, and sets up boot autoload so the module loads after the DVB driver.
+**Reboot** afterwards. Verify with:
+
+```sh
+cat /proc/dmxcsa
+```
+
+## What a Release contains
+
+Each release `vX.Y` provides, per receiver:
+
+| File | What it is |
+|---|---|
+| `dmxcsa-<box>.ko` | the raw kernel module |
+| `kernel-module-dmxcsa_<version>_<box>.ipk` | opkg installer (module + autoload) |
+| `kernel-module-dmxcsa_<version>_<box>.deb` | Debian installer (selected Dreamboxes) |
+
+Each module is built against that receiver's exact kernel, so it matches the
+running kernel's version magic (and, where the kernel uses it, its symbol
+versions).
+
+## Requirements
+
+- a local CA client that writes the descrambler keys with
+  **`extended_cw_api = 1`** (so the algorithm is signalled to the kernel)
+- where the userspace player has a software descrambler of its own, disable it,
+  otherwise the two work against each other
+
+## How releases are produced
+
+```mermaid
+flowchart LR
+    V["version bump<br/>(source repo)"] --> B["CI builds dmxcsa-&lt;box&gt;.ko<br/>for every receiver"]
+    B --> R["Release vX.Y here<br/>with all .ko"]
+    R -- "release published" --> P["package workflow<br/>build .ipk / .deb per box"]
+    P --> A["installers attached<br/>to the same Release"]
+```
+
+A new module version triggers a build for every receiver; the built modules are
+published as a Release in this repository, which in turn triggers the packaging
+workflow that wraps each module into an `.ipk` (and, for selected Dreamboxes, a
+`.deb`) and attaches the installers to the Release.
+
+## License
+
+GPL-2.0-or-later.
