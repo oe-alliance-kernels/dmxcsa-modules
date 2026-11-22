@@ -1,11 +1,20 @@
 #!/bin/sh
-# dmxcsa autoload on boxes that load the DVB driver via /etc/modules-load.d.
-# Named zz-dmxcsa.conf so it sorts AFTER the DVB driver's own conf file and the
-# driver is up first; this works with both kmod and BusyBox modprobe (the latter
-# has no softdep support).
+# dmxcsa autoload on boxes that load modules via /etc/modules-load.d.
+# The DVB driver registers its /dev/dvb nodes with a delay, so a plain
+# modules-load.d entry would load dmxcsa too early - it would find no DVB nodes
+# and bail. Instead an init script waits for the demux node, then loads it.
+# This is timing-robust and also sidesteps BusyBox modprobe (no softdep).
 set -e
 depmod -a 2>/dev/null || true
-mkdir -p /etc/modules-load.d
-echo dmxcsa > /etc/modules-load.d/zz-dmxcsa.conf
+cat > /etc/init.d/dmxcsa <<'EOS'
+#!/bin/sh
+[ "$1" = start ] || exit 0
+i=0
+while [ ! -e /dev/dvb/adapter0/demux0 ] && [ $i -lt 30 ]; do sleep 1; i=$((i+1)); done
+modprobe dmxcsa
+exit 0
+EOS
+chmod 755 /etc/init.d/dmxcsa
+update-rc.d dmxcsa start 50 S . 2>/dev/null || true
 modprobe dmxcsa 2>/dev/null || true
 exit 0
