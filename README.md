@@ -71,21 +71,6 @@ versions).
 - where the userspace player has a software descrambler of its own, disable it,
   otherwise the two work against each other
 
-## How releases are produced
-
-```mermaid
-flowchart LR
-    V["version bump<br/>(source repo)"] --> B["CI builds dmxcsa-&lt;box&gt;.ko<br/>for every receiver"]
-    B --> R["Release vX.Y here<br/>with all .ko"]
-    R -- "release published" --> P["package workflow<br/>build .ipk / .deb per box"]
-    P --> A["installers attached<br/>to the same Release"]
-```
-
-A new module version triggers a build for every receiver; the built modules are
-published as a Release in this repository, which in turn triggers the packaging
-workflow that wraps each module into an `.ipk` (and, for selected Dreamboxes, a
-`.deb`) and attaches the installers to the Release.
-
 ## License
 
 GPL-2.0-or-later.
