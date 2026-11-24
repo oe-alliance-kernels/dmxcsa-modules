@@ -25,32 +25,34 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Install packaging tools
-        run: sudo apt-get update && sudo apt-get install -y fakeroot binutils dpkg xz-utils jq
+        run: sudo apt-get update && sudo apt-get install -y fakeroot binutils dpkg xz-utils
 
-      - name: Download modules and packaging metadata from the release
+      - name: Download the modules from the release
         run: |
           mkdir -p ko
           gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'dmxcsa-*.ko' --dir ko
-          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'packages.json'
-          ls -la ko packages.json
+          ls -la ko
 
       - name: Build installers per box
         run: |
           set -e
           VER="${TAG#v}"
           mkdir -p out
-          debarch() { case "$1" in arm64) echo arm64;; arm) echo armhf;; mips) echo mipsel;; *) echo "$1";; esac; }
 
-          while read -r b; do
-            BOX=$(jq -r .machine <<<"$b")
-            KARCH=$(jq -r .arch <<<"$b")
-            AUTOLOAD=$(jq -r .autoload <<<"$b")
-            DEB=$(jq -r .deb <<<"$b")
-            KO="ko/dmxcsa-${BOX}.ko"
-            if [ ! -f "$KO" ]; then echo "no module for $BOX in this release, skip"; continue; fi
+          for KO in ko/dmxcsa-*.ko; do
+            # dmxcsa-<box>-<kernel version>.ko
+            BOX=$(basename "$KO" .ko); BOX=${BOX#dmxcsa-}; BOX=${BOX%%-*}
             KVER=$(strings "$KO" | sed -n 's/^vermagic=\([^ ]*\).*/\1/p' | head -1)
             [ -n "$KVER" ] || { echo "no vermagic in $KO"; exit 1; }
-            echo "== $BOX  kver=$KVER  autoload=$AUTOLOAD  deb=$DEB =="
+            # a Debian installer for the Dream boxes, its architecture from the module
+            case "$BOX" in dm[0-9]*|dreamone|dreamtwo) DEB=true ;; *) DEB=false ;; esac
+            case "$(readelf -h "$KO" | sed -n 's/^ *Machine: *//p')" in
+              AArch64) DA=arm64 ;;
+              ARM) DA=armhf ;;
+              MIPS*) DA=mipsel ;;
+              *) DA= ;;
+            esac
+            echo "== $BOX  kver=$KVER  deb=$DEB $DA =="
 
             # data tree: the module at the kernel's extra path
             D="d-$BOX"; rm -rf "$D"; mkdir -p "$D/lib/modules/$KVER/extra"
@@ -70,16 +72,15 @@ jobs:
             ( cd "$W" && ar rc "$GITHUB_WORKSPACE/out/kernel-module-dmxcsa_${VER}_${BOX}.ipk" debian-binary control.tar.gz data.tar.gz )
 
             # ---- deb (dpkg) for the Dream boxes; Architecture from the kernel arch ----
-            if [ "$DEB" = "true" ]; then
-              DA=$(debarch "$KARCH")
+            if [ "$DEB" = "true" ] && [ -n "$DA" ]; then
               DB="deb-$BOX"; rm -rf "$DB"; mkdir -p "$DB/DEBIAN"
               cp -a "$D/." "$DB/"
               sed -e "s/@VER@/$VER/" -e "s/@BOX@/$BOX/" -e "s/@ARCH@/$DA/" packaging/control.in > "$DB/DEBIAN/control"
               cp "$C/postinst" "$DB/DEBIAN/postinst"
               cp "$C/prerm" "$DB/DEBIAN/prerm"
-              fakeroot dpkg-deb -Z xz --build "$DB" "out/kernel-module-dmxcsa_${VER}_${BOX}_${DA}.deb"
+              fakeroot dpkg-deb -Z xz --build "$DB" "out/kernel-module-dmxcsa_${VER}_${BOX}.deb"
             fi
-          done < <(jq -c '.[]' packages.json)
+          done
 
           echo "=== built installers ==="; ls -la out
 

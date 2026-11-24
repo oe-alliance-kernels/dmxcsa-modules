@@ -104,7 +104,7 @@ Each release `vX.Y` provides, per receiver:
 
 | File | What it is |
 |---|---|
-| `dmxcsa-<box>.ko` | the raw kernel module |
+| `dmxcsa-<box>-<kernel version>.ko` | the raw kernel module |
 | `kernel-module-dmxcsa_<version>_<box>.ipk` | opkg installer (module + autoload) |
 | `kernel-module-dmxcsa_<version>_<box>.deb` | Debian installer (selected Dreamboxes) |
 
