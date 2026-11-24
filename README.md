@@ -20,7 +20,9 @@ local CA client writes.
 ## Install
 
 Download the package for your receiver from the latest
-[Release](../../releases/latest) and install it.
+[Release](../../releases/latest) and install it. The
+[search page](https://oe-alliance-kernels.github.io/dmxcsa-modules/) finds the
+files of a receiver by its box name.
 
 **opkg receivers** (most enigma2 images):
 

@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dmxcsa modules</title>
+<style>
+	:root {
+		--bg: #f6f7f9;
+		--panel: #ffffff;
+		--text: #1c2330;
+		--muted: #5f6b7a;
+		--line: #dde2e8;
+		--accent: #2f6fde;
+		--code: #eef1f5;
+	}
+	@media (prefers-color-scheme: dark) {
+		:root {
+			--bg: #10141b;
+			--panel: #171d26;
+			--text: #e4e9f0;
+			--muted: #93a0b0;
+			--line: #2a3340;
+			--accent: #7aa7ff;
+			--code: #1f2732;
+		}
+	}
+	* { box-sizing: border-box; }
+	body {
+		margin: 0;
+		background: var(--bg);
+		color: var(--text);
+		font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+	}
+	main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+	h1 { font-size: 1.6rem; margin: 0 0 4px; }
+	p { margin: 0 0 12px; }
+	.muted { color: var(--muted); font-size: 0.9rem; }
+	a { color: var(--accent); }
+	input {
+		width: 100%;
+		margin: 16px 0 8px;
+		padding: 12px 14px;
+		font-size: 1.05rem;
+		color: var(--text);
+		background: var(--panel);
+		border: 1px solid var(--line);
+		border-radius: 8px;
+	}
+	input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+	.box {
+		background: var(--panel);
+		border: 1px solid var(--line);
+		border-radius: 8px;
+		padding: 12px 14px;
+		margin: 10px 0;
+	}
+	.box h2 { font-size: 1.1rem; margin: 0 0 6px; }
+	.files {
+		display: grid;
+		grid-template-columns: max-content 1fr;
+		gap: 4px 16px;
+		margin: 0 0 8px;
+	}
+	.files a { word-break: break-all; }
+	.files span { color: var(--muted); font-size: 0.9rem; }
+	@media (max-width: 600px) {
+		.files { grid-template-columns: 1fr; gap: 0; }
+		.files span { margin-bottom: 6px; }
+	}
+	code {
+		display: block;
+		padding: 6px 8px;
+		background: var(--code);
+		border-radius: 6px;
+		font: 0.85rem/1.4 ui-monospace, Consolas, monospace;
+		overflow-x: auto;
+		white-space: pre;
+	}
+</style>
+</head>
+<body>
+<main>
+	<h1>dmxcsa modules</h1>
+	<p class="muted">Find the installer for your receiver in the latest release of
+	<a href="https://github.com/oe-alliance-kernels/dmxcsa-modules">dmxcsa-modules</a>.</p>
+	<input id="q" type="search" placeholder="Box name, e.g. dm900" autocomplete="off" autofocus>
+	<p id="status" class="muted">Loading the release…</p>
+	<div id="list"></div>
+</main>
+<script>
+const REPO = "oe-alliance-kernels/dmxcsa-modules";
+const q = document.getElementById("q");
+const status = document.getElementById("status");
+const list = document.getElementById("list");
+let boxes = [];
+
+// dmxcsa-<box>-<kernel version>[-<variant>].ko, kernel-module-dmxcsa_<version>_<box>.ipk/.deb
+function boxOf(name) {
+	let m = name.match(/^dmxcsa-([^-]+)-.+\.ko$/);
+	if (m) return m[1];
+	m = name.match(/^kernel-module-dmxcsa_.+_([^_]+)\.(ipk|deb)$/);
+	return m ? m[1] : null;
+}
+
+function describe(name, box, modules) {
+	const pick = modules > 1 ? ", picks the module for the running kernel" : "";
+	if (name.endsWith(".ipk")) return "installer for opkg enigma2 images" + pick;
+	if (name.endsWith(".deb")) return "installer for dpkg enigma2 images" + pick;
+	const kv = name.slice(("dmxcsa-" + box + "-").length, -".ko".length);
+	if (kv.endsWith("-noneon"))
+		return "module only, kernel " + kv.slice(0, -"-noneon".length) + " without kernel mode NEON";
+	return "module only, kernel " + kv;
+}
+
+function render() {
+	if (!boxes.length) return;
+	const term = q.value.trim().toLowerCase();
+	const hits = term ? boxes.filter(b => b.name.includes(term)) : [];
+	list.replaceChildren();
+	if (!term) {
+		status.textContent = boxes.length + " receivers. Type a box name.";
+		return;
+	}
+	status.textContent = hits.length ? hits.length + " found" : "No receiver matches \"" + q.value.trim() + "\".";
+	for (const b of hits.slice(0, 50)) {
+		const div = document.createElement("div");
+		div.className = "box";
+		const h = document.createElement("h2");
+		h.textContent = b.name;
+		div.append(h);
+		const files = document.createElement("div");
+		files.className = "files";
+		const modules = b.assets.filter(a => a.name.endsWith(".ko")).length;
+		for (const a of b.assets) {
+			const link = document.createElement("a");
+			link.href = a.browser_download_url;
+			link.textContent = a.name;
+			const note = document.createElement("span");
+			note.textContent = describe(a.name, b.name, modules);
+			files.append(link, note);
+		}
+		div.append(files);
+		const lines = [];
+		for (const a of b.assets) {
+			if (a.name.endsWith(".ipk")) lines.push("opkg install /tmp/" + a.name);
+			if (a.name.endsWith(".deb")) lines.push("dpkg -i /tmp/" + a.name);
+		}
+		if (lines.length) {
+			const code = document.createElement("code");
+			code.textContent = lines.join("\n");
+			div.append(code);
+		}
+		list.append(div);
+	}
+}
+
+fetch("https://api.github.com/repos/" + REPO + "/releases/latest")
+	.then(r => r.ok ? r.json() : Promise.reject(r.status))
+	.then(rel => {
+		const byBox = new Map();
+		for (const a of rel.assets) {
+			const box = boxOf(a.name);
+			if (!box) continue;
+			if (!byBox.has(box)) byBox.set(box, []);
+			byBox.get(box).push(a);
+		}
+		// installer first, then the raw modules
+		const rank = n => n.endsWith(".ipk") ? 0 : n.endsWith(".deb") ? 1 : 2;
+		boxes = [...byBox].map(([name, assets]) => ({
+			name,
+			assets: assets.sort((x, y) => rank(x.name) - rank(y.name) || x.name.localeCompare(y.name))
+		})).sort((x, y) => x.name.localeCompare(y.name));
+		document.querySelector("h1").textContent = "dmxcsa modules " + rel.tag_name;
+		render();
+	})
+	.catch(() => {
+		status.replaceChildren("The release list could not be loaded. Open the ");
+		const link = document.createElement("a");
+		link.href = "https://github.com/" + REPO + "/releases/latest";
+		link.textContent = "latest release";
+		status.append(link, " instead.");
+	});
+
+q.addEventListener("input", render);
+</script>
+</body>
+</html>
