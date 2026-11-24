@@ -22,7 +22,8 @@ echo "== modules"
 lsmod
 ls -la /lib/modules/$(uname -r)/extra/ 2>/dev/null
 for f in /lib/modules/$(uname -r)/extra/*.ko /lib/modules/$(uname -r)/extra/*/*.ko; do
-	[ -f "$f" ] && echo "-- $(basename $f): $(modinfo $f 2>/dev/null | grep -E "^(vermagic|version|license|depends):" | tr '\n' ' ')"
+	# no modinfo on DreamOS, the fields are plain strings in the module
+	[ -f "$f" ] && echo "-- $(basename $f): $(tr '\0' '\n' < $f | grep -E "^(vermagic|version|license|depends)=" | tr '\n' ' ')"
 done
 for f in /etc/modules-load.d/*.conf /etc/modprobe.d/*.conf; do
 	[ -f "$f" ] && echo "-- $f: $(tr '\n' ' ' < $f)"
@@ -33,6 +34,63 @@ if [ -r /proc/dmxcsa ]; then
 	cat /proc/dmxcsa
 else
 	echo "dmxcsa not loaded (no /proc/dmxcsa)"
+fi
+
+echo "== autoload"
+# sysvinit: the installer registers /etc/init.d/dmxcsa to start at S66.
+# systemd (DreamOS): it has no update-rc.d and does not read rcS.d, the
+# installer sets up dmxcsa.service with the loader /usr/lib/dmxcsa/load.
+# Both run before enigma2.
+init=$(cat /proc/1/comm 2>/dev/null)
+echo "init: $init"
+opkg list-installed 2>/dev/null | grep -i dmxcsa
+dpkg -l 2>/dev/null | grep -i dmxcsa | awk '{print $1, $2, $3}'
+bad=
+if [ "$init" = systemd ]; then
+	l=/usr/lib/dmxcsa/load
+	# an init script of the same name makes systemctl enable fail
+	[ -e /etc/init.d/dmxcsa ] && echo "-- /etc/init.d/dmxcsa present" && bad="$bad init.d-script"
+else
+	l=/etc/init.d/dmxcsa
+fi
+if [ -x $l ]; then
+	echo "-- $l:"
+	cat $l
+else
+	echo "-- $l missing or not executable"
+	bad="$bad loader"
+fi
+for f in /etc/rc?.d/*dmxcsa*; do
+	[ -e "$f" ] || [ -L "$f" ] && echo "-- $f -> $(readlink $f)"
+done
+if [ "$init" = systemd ]; then
+	for f in /etc/systemd/system/*dmxcsa* /etc/systemd/system/*/*dmxcsa* /lib/systemd/system/*dmxcsa* /run/systemd/generator*/*dmxcsa* /run/systemd/generator*/*/*dmxcsa*; do
+		[ -e "$f" ] || [ -L "$f" ] && echo "-- $f"
+	done
+	echo "-- systemctl is-enabled: $(systemctl is-enabled dmxcsa 2>&1 | tail -n 1)"
+	systemctl show -p LoadState -p ActiveState -p SubState -p Result -p WantedBy -p FragmentPath dmxcsa 2>&1 | sed 's/^/-- /'
+	systemctl status dmxcsa --no-pager -n 5 2>&1
+	# no --value, older systemd lacks it
+	[ -n "$(systemctl show -p WantedBy dmxcsa 2>/dev/null | sed -n 's/^WantedBy=//p')" ] || bad="$bad not-wanted-by-a-target"
+else
+	ls /etc/rcS.d/S*dmxcsa >/dev/null 2>&1 || bad="$bad rcS.d-start-link"
+fi
+echo "-- rcS.d: $(ls /etc/rcS.d 2>/dev/null | tr '\n' ' ')"
+echo "-- rc3.d: $(ls /etc/rc3.d 2>/dev/null | tr '\n' ' ')"
+if grep -q "dmxcsa.ko:" /lib/modules/$(uname -r)/modules.dep 2>/dev/null; then
+	echo "-- modules.dep: $(grep "dmxcsa.ko:" /lib/modules/$(uname -r)/modules.dep)"
+else
+	echo "-- dmxcsa.ko not in modules.dep, modprobe dmxcsa fails"
+	bad="$bad modules.dep"
+fi
+for f in /etc/modules-load.d/*dmxcsa*.conf /etc/modprobe.d/dmxcsa.conf; do
+	[ -f "$f" ] && echo "-- early loader left over: $f" && bad="$bad $f"
+done
+dmesg 2>/dev/null | grep -i dmxcsa | head -n 3
+if [ -n "$bad" ]; then
+	echo "autoload: NOT OK ($bad )"
+else
+	echo "autoload: OK"
 fi
 
 echo "== dvb nodes"

@@ -29,6 +29,8 @@ Then send the **`/tmp/dmxcsa-boxinfo-<box>.txt`** file back, together with your 
 
 System and kernel, CPU features (NEON, arch), the relevant kernel config
 (`MODVERSIONS`, `KERNEL_MODE_NEON`, `ARM64`/`CPU_V7`/`MIPS`, endianness, `HZ`,
-DVB core), loaded modules and their vermagic, the DVB nodes, which driver serves
+DVB core), loaded modules and their vermagic, whether the boot autoload is set
+up (init script, its start link or systemd unit, `modules.dep`, no early loader
+left over - summed up in an `autoload: OK` line), the DVB nodes, which driver serves
 the demux/ca/video/audio nodes, which processes hold the DVB nodes, and the
 installed kernel and libdvbcsa versions.
