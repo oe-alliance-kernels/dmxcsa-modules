@@ -3,4 +3,6 @@
 # reboot rather than force-unloaded while it may be descrambling.
 rm -f /etc/init.d/dmxcsa
 update-rc.d dmxcsa remove 2>/dev/null || true
+# also where postinst moved it there itself (boxes with more than one kernel)
+rm -f /lib/modules/$(uname -r)/extra/dmxcsa.ko
 exit 0

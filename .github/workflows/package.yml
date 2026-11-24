@@ -39,11 +39,16 @@ jobs:
           VER="${TAG#v}"
           mkdir -p out
 
+          # the modules of each box: dmxcsa-<box>-<kernel version>.ko
           for KO in ko/dmxcsa-*.ko; do
-            # dmxcsa-<box>-<kernel version>.ko
             BOX=$(basename "$KO" .ko); BOX=${BOX#dmxcsa-}; BOX=${BOX%%-*}
-            KVER=$(strings "$KO" | sed -n 's/^vermagic=\([^ ]*\).*/\1/p' | head -1)
-            [ -n "$KVER" ] || { echo "no vermagic in $KO"; exit 1; }
+            mkdir -p "m-$BOX"; cp "$KO" "m-$BOX/"
+          done
+
+          for M in m-*; do
+            BOX=${M#m-}
+            N=$(ls "$M" | wc -l)
+            KO=$(ls "$M"/*.ko | head -1)
             # a Debian installer for the Dream boxes, its architecture from the module
             case "$BOX" in dm[0-9]*|dreamone|dreamtwo) DEB=true ;; *) DEB=false ;; esac
             case "$(readelf -h "$KO" | sed -n 's/^ *Machine: *//p')" in
@@ -52,11 +57,22 @@ jobs:
               MIPS*) DA=mipsel ;;
               *) DA= ;;
             esac
-            echo "== $BOX  kver=$KVER  deb=$DEB $DA =="
+            echo "== $BOX  modules=$N  deb=$DEB $DA =="
 
-            # data tree: the module at the kernel's extra path
-            D="d-$BOX"; rm -rf "$D"; mkdir -p "$D/lib/modules/$KVER/extra"
-            cp "$KO" "$D/lib/modules/$KVER/extra/dmxcsa.ko"
+            D="d-$BOX"; rm -rf "$D"
+            if [ "$N" = 1 ]; then
+              # data tree: the module at the kernel's extra path
+              KVER=$(strings "$KO" | sed -n 's/^vermagic=\([^ ]*\).*/\1/p' | head -1)
+              [ -n "$KVER" ] || { echo "no vermagic in $KO"; exit 1; }
+              mkdir -p "$D/lib/modules/$KVER/extra"
+              cp "$KO" "$D/lib/modules/$KVER/extra/dmxcsa.ko"
+            else
+              # a box with more than one kernel: all its modules come along in
+              # /tmp, postinst moves the one for the running kernel into place
+              install -d -m 1777 "$D/tmp"
+              mkdir -p "$D/tmp/dmxcsa"
+              cp "$M"/*.ko "$D/tmp/dmxcsa/"
+            fi
 
             # control + maintainer scripts
             C="c-$BOX"; rm -rf "$C"; mkdir -p "$C"

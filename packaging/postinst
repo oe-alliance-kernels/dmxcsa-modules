@@ -5,6 +5,35 @@
 # (Vu+ proxy at S65), and it sidesteps BusyBox modprobe (no softdep). S66 runs
 # before enigma2.
 set -e
+# a box with more than one kernel gets all its modules in /tmp/dmxcsa: move the
+# one whose version magic matches the box's kernel modules into place, drop the rest.
+# Where the same kernel version comes with and without kernel mode NEON, the NEON
+# module is taken only if the running kernel offers it.
+if [ -d /tmp/dmxcsa ]; then
+	vm() { tr '\0' '\n' < "$1" | sed -n 's/^vermagic=//p' | head -n 1; }
+	neon() { tr '\0' '\n' < "$1" | grep -qx kernel_neon_begin; }
+	x=/lib/modules/$(uname -r)
+	ref=$(find $x -name '*.ko' ! -name dmxcsa.ko | head -n 1)
+	rm -f $x/extra/dmxcsa.ko
+	pick= last=
+	for k in /tmp/dmxcsa/*.ko; do
+		[ -n "$ref" ] && [ "$(vm $k)" = "$(vm $ref)" ] || continue
+		if neon $k; then
+			last=$k
+			grep -qw kernel_neon_begin /proc/kallsyms && { pick=$k; break; }
+		else
+			[ -n "$pick" ] || pick=$k
+		fi
+	done
+	# without kallsyms there is nothing to tell, a NEON module is better than none
+	[ -n "$pick" ] || pick=$last
+	if [ -n "$pick" ]; then
+		mkdir -p $x/extra
+		mv $pick $x/extra/dmxcsa.ko
+	fi
+	rm -rf /tmp/dmxcsa
+	[ -f $x/extra/dmxcsa.ko ] || { echo "dmxcsa: no module for this kernel in the package"; exit 1; }
+fi
 depmod -a 2>/dev/null || true
 # remove any early-load configs left over from testing, so this S66 path is the
 # only thing that loads the module (an early modules-load would race the DVB

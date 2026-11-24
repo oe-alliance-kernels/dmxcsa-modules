@@ -112,6 +112,13 @@ Each module is built against that receiver's exact kernel, so it matches the
 running kernel's version magic (and, where the kernel uses it, its symbol
 versions).
 
+Some receivers come with two modules, and their installer picks the one for
+the running kernel:
+
+- dreamone and dreamtwo: one module per kernel version (4.9.269 and 4.9.113)
+- dm900 and dm920: `dmxcsa-<box>-<kernel version>-noneon.ko` next to the
+  regular one, for kernels of the same version without kernel mode NEON
+
 ## Requirements
 
 - a local CA client that writes the descrambler keys with
