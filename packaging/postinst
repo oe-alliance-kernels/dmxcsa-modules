@@ -1,9 +1,10 @@
 #!/bin/sh
-# dmxcsa autoload for every box. An init script (S66) waits for the DVB demux
-# node to appear, then loads the module. This is robust whether the DVB driver
-# comes up early (modules-load boxes, DVB at S04) or through a platform init
-# (Vu+ proxy at S65), and it sidesteps BusyBox modprobe (no softdep). S66 runs
-# before enigma2.
+# dmxcsa autoload for every box. A loader script waits for the DVB demux node
+# to appear, then loads the module. This is robust whether the DVB driver comes
+# up early (modules-load boxes, DVB at S04) or through a platform init (Vu+
+# proxy at S65), and it sidesteps BusyBox modprobe (no softdep). With sysvinit
+# it is the init script at S66, with systemd (DreamOS) a unit; both run before
+# enigma2.
 set -e
 # a box with more than one kernel gets all its modules in /tmp/dmxcsa: move the
 # one whose version magic matches the box's kernel modules into place, drop the rest.
@@ -35,21 +36,51 @@ if [ -d /tmp/dmxcsa ]; then
 	[ -f $x/extra/dmxcsa.ko ] || { echo "dmxcsa: no module for this kernel in the package"; exit 1; }
 fi
 depmod -a 2>/dev/null || true
-# remove any early-load configs left over from testing, so this S66 path is the
-# only thing that loads the module (an early modules-load would race the DVB
+# remove any early-load configs left over from testing, so the loader below is
+# the only thing that loads the module (an early modules-load would race the DVB
 # driver, exactly what the wait loop avoids)
-rm -f /etc/modprobe.d/dmxcsa.conf /etc/modules-load.d/dmxcsa.conf
-cat > /etc/init.d/dmxcsa <<'EOS'
+rm -f /etc/modprobe.d/dmxcsa.conf /etc/modules-load.d/*dmxcsa*.conf
+# systemd has no update-rc.d on DreamOS and does not read rcS.d. An init script
+# of the same name would make systemctl enable fail, so the loader lives
+# elsewhere there.
+if [ -d /run/systemd/system ]; then
+	rm -f /etc/init.d/dmxcsa
+	mkdir -p /usr/lib/dmxcsa
+	l=/usr/lib/dmxcsa/load
+else
+	l=/etc/init.d/dmxcsa
+fi
+cat > $l <<'EOS'
 #!/bin/sh
 [ "$1" = start ] || exit 0
 # drop any early-load config that reappeared, before we load the module
-rm -f /etc/modprobe.d/dmxcsa.conf /etc/modules-load.d/dmxcsa.conf
+rm -f /etc/modprobe.d/dmxcsa.conf /etc/modules-load.d/*dmxcsa*.conf
 i=0
 while [ ! -e /dev/dvb/adapter0/demux0 ] && [ $i -lt 30 ]; do sleep 1; i=$((i+1)); done
 modprobe dmxcsa
 exit 0
 EOS
-chmod 755 /etc/init.d/dmxcsa
-update-rc.d dmxcsa start 66 S . 2>/dev/null || true
+chmod 755 $l
+if [ -d /run/systemd/system ]; then
+	cat > /lib/systemd/system/dmxcsa.service <<'EOS'
+[Unit]
+Description=dmxcsa kernel module
+DefaultDependencies=no
+After=systemd-modules-load.service
+Before=enigma2.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/lib/dmxcsa/load start
+
+[Install]
+WantedBy=multi-user.target
+EOS
+	systemctl daemon-reload 2>/dev/null || true
+	systemctl enable dmxcsa.service 2>/dev/null || true
+else
+	update-rc.d dmxcsa start 66 S . 2>/dev/null || true
+fi
 modprobe dmxcsa 2>/dev/null || true
 exit 0
