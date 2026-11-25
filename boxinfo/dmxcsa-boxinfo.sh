@@ -11,6 +11,17 @@ for f in model boxtype hwmodel chipset vumodel gbmodel; do [ -r /proc/stb/info/$
 grep -iE "Hardware|model name|Features|CPU part" /proc/cpuinfo | sort -u
 opkg print-architecture 2>/dev/null | tail -3
 
+echo "== image"
+# image name + version, robust across images: openATV/OpenPLi keys, else /etc/issue
+IV=/etc/image-version
+if [ -f "$IV" ]; then
+	grep -iE "^(distro|imageversion|version|box_type|machine_name|build|oever|creator)=" "$IV"
+else
+	sed -e 's/\\[nl]//g' /etc/issue 2>/dev/null | grep -vE "^[[:space:]]*$" | head -2
+fi
+# enigma2 version (opkg, or DreamOS dpkg)
+opkg list-installed enigma2 2>/dev/null | head -1 || dpkg -l enigma2 2>/dev/null | awk '/^ii/{print $2" "$3}'
+
 echo "== kernel config"
 if [ -r /proc/config.gz ]; then
 	zcat /proc/config.gz | grep -E "CONFIG_MODVERSIONS|CONFIG_MODULE_SIG=|CONFIG_KALLSYMS|CONFIG_KERNEL_MODE_NEON|CONFIG_NEON=|CONFIG_ARM64=|CONFIG_CPU_V7=|CONFIG_THUMB2_KERNEL|CONFIG_MIPS=|CONFIG_64BIT=|CONFIG_CPU_BIG_ENDIAN|CONFIG_CPU_LITTLE_ENDIAN|CONFIG_SMP=|CONFIG_PREEMPT=|CONFIG_PREEMPT_NONE|CONFIG_HZ=|CONFIG_DVB_CORE|CONFIG_DVB_MAX_ADAPTERS|CONFIG_DVB_DEMUX|CONFIG_VMAP_STACK|CONFIG_ARM_LPAE|CONFIG_THREAD_INFO_IN_TASK"
@@ -111,6 +122,39 @@ for p in /proc/[0-9]*; do
 	n=$(ls -l $p/fd 2>/dev/null | grep -c "/dev/dvb/")
 	[ "$n" -gt 0 ] && echo "$(basename $p) $(cat $p/comm 2>/dev/null): $(ls -l $p/fd 2>/dev/null | grep -o '/dev/dvb/adapter[0-9]*/[a-z]*[0-9]*' | sed 's|/dev/dvb/||' | sort | uniq -c | awk '{printf "%s%s ", $2, ($1>1?"x"$1:"")}')"
 done
+
+echo "== oscam"
+# the config/temp dir can live anywhere - take both from oscam.version
+VF=""
+for c in /tmp/.oscam/oscam.version /var/tmp/.oscam/oscam.version; do [ -f "$c" ] && VF="$c" && break; done
+[ -z "$VF" ] && VF=$(find /tmp /var/tmp /etc -name oscam.version 2>/dev/null | head -1)
+CD=""; TD=""
+if [ -n "$VF" ] && [ -f "$VF" ]; then
+	CD=$(sed -n 's/^ConfigDir:[[:space:]]*//p' "$VF" | tr -d ' \r')
+	TD=$(sed -n 's/^TempDir:[[:space:]]*//p' "$VF" | tr -d ' \r')
+	grep -iE "^Version:|^ConfigDir:|^TempDir:|Streamrelay" "$VF"
+	echo "-- oscam.conf [streamrelay]/[dvbapi] --"
+	[ -n "$CD" ] && awk '/^\[/{s=$0} s=="[streamrelay]"||s=="[dvbapi]"' "$CD/oscam.conf" 2>/dev/null
+else
+	echo "(no oscam.version - oscam not running?)"
+fi
+
+echo "== ecm"
+# current service descrambling proof - CAID shows CSA-ALT, cw present/none shows CWs flow.
+# privacy: never print the server (from:), the reader or the CW values.
+E="$TD/ecm.info"
+[ -f "$E" ] || E=/tmp/ecm.info
+if [ -f "$E" ]; then
+	grep -iE "^(caid|prov|pid|chid|ecm time):" "$E"
+	grep -q "^cw0" "$E" && echo "cw: present" || echo "cw: none"
+else
+	echo "(no ecm.info)"
+fi
+
+echo "== fcc"
+# FCC feeds the video decoder past the demux - dmxcsa cannot see that path.
+ls -l /dev/fcc* 2>/dev/null || echo "(no /dev/fcc*)"
+for p in /proc/[0-9]*; do ls -l "$p/fd" 2>/dev/null | grep -q /dev/fcc && echo "fcc held by $(cat "$p/comm" 2>/dev/null)"; done
 
 echo "== kernel modules installed"
 opkg list-installed 2>/dev/null | grep -E "^kernel-image|libdvbcsa"
