@@ -17,10 +17,10 @@ IV=/etc/image-version
 if [ -f "$IV" ]; then
 	grep -iE "^(distro|imageversion|version|box_type|machine_name|build|oever|creator)=" "$IV"
 else
-	sed -e 's/\\[nl]//g' /etc/issue 2>/dev/null | grep -vE "^[[:space:]]*$" | head -2
+	sed -e 's/\\[nl]//g' /etc/issue 2>/dev/null | grep -vE "^[[:space:]]*$" | head -n 2
 fi
 # enigma2 version (opkg, or DreamOS dpkg)
-opkg list-installed enigma2 2>/dev/null | head -1 || dpkg -l enigma2 2>/dev/null | awk '/^ii/{print $2" "$3}'
+opkg list-installed enigma2 2>/dev/null | head -n 1 || dpkg -l enigma2 2>/dev/null | awk '/^ii/{print $2" "$3}'
 
 echo "== kernel config"
 if [ -r /proc/config.gz ]; then
@@ -114,8 +114,8 @@ cat /proc/bus/nim_sockets 2>/dev/null | grep -iE "NIM Socket|Type|Name|Frontend_
 echo "== who serves the dvb devices"
 # symbol names only, the kernel addresses are cut off
 grep -E " (dvb_register_device|dvb_dmxdev_init|dvb_dmx_init|dvb_generic_ioctl|dvb_generic_open|dvb_demux_ioctl|dvb_demux_read|dvb_dvr_write|dvb_dvr_ioctl|dvb_dmx_swfilter|dvb_dmx_swfilter_packets|dvb_ca_en50221_init)(\s|$)" /proc/kallsyms | sed 's/^[0-9a-fA-F]* //'
-grep -iE " t .*(video|audio|ca|dvr|demux|dmx)_(ioctl|write|open|release|poll)(\s|$)" /proc/kallsyms | grep -v "snd_\|v4l\|uvc" | head -40 | sed 's/^[0-9a-fA-F]* //'
-grep -iE " (t|T) .*(set_source|ca_set_pid|ca_set_descr|descrambl|keyslot)" /proc/kallsyms | head -40 | sed 's/^[0-9a-fA-F]* //'
+grep -iE " t .*(video|audio|ca|dvr|demux|dmx)_(ioctl|write|open|release|poll)(\s|$)" /proc/kallsyms | grep -v "snd_\|v4l\|uvc" | head -n 40 | sed 's/^[0-9a-fA-F]* //'
+grep -iE " (t|T) .*(set_source|ca_set_pid|ca_set_descr|descrambl|keyslot)" /proc/kallsyms | head -n 40 | sed 's/^[0-9a-fA-F]* //'
 
 echo "== processes holding dvb nodes"
 for p in /proc/[0-9]*; do
@@ -127,7 +127,7 @@ echo "== oscam"
 # the config/temp dir can live anywhere - take both from oscam.version
 VF=""
 for c in /tmp/.oscam/oscam.version /var/tmp/.oscam/oscam.version; do [ -f "$c" ] && VF="$c" && break; done
-[ -z "$VF" ] && VF=$(find /tmp /var/tmp /etc -name oscam.version 2>/dev/null | head -1)
+[ -z "$VF" ] && VF=$(find /tmp /var/tmp /etc -name oscam.version 2>/dev/null | head -n 1)
 CD=""; TD=""
 if [ -n "$VF" ] && [ -f "$VF" ]; then
 	CD=$(sed -n 's/^ConfigDir:[[:space:]]*//p' "$VF" | tr -d ' \r')
