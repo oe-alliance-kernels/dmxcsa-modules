@@ -81,6 +81,10 @@ EOS
 	systemctl enable dmxcsa.service 2>/dev/null || true
 else
 	update-rc.d dmxcsa start 66 S . 2>/dev/null || true
+	# some older images ship no working update-rc.d (only the BusyBox one) and the
+	# swallowed error above leaves no start link, so the module never loads at
+	# cold boot. Make sure the rcS.d start link exists.
+	[ -e /etc/rcS.d/S66dmxcsa ] || ln -sf ../init.d/dmxcsa /etc/rcS.d/S66dmxcsa
 fi
 modprobe dmxcsa 2>/dev/null || true
 exit 0
